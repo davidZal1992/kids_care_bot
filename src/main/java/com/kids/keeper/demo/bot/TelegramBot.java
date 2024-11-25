@@ -105,7 +105,7 @@ public class TelegramBot extends TelegramLongPollingBot {
         this.answerReceived = true;
         String origin = update.getCallbackQuery().getFrom().getFirstName();
 
-        log.info("Origin sender is: {}", origin);
+        log.info("Origin sender is: {} and the label is {}", origin, update.getCallbackQuery().getData());
 
         // Check if the callback data is for pickup
 
@@ -158,7 +158,7 @@ public class TelegramBot extends TelegramLongPollingBot {
 
 
     private SendMessage buildMReqMessage(String chatId, String inputText, InlineKeyboardMarkup keyboardMarkup) {
-        log.info("Building message for approval request");
+        log.info("Building message for approval response to  chatId: {} and the text is: {}", chatId, inputText);
         return SendMessage.builder()
                 .chatId(chatId)
                 .text(inputText)
@@ -167,7 +167,7 @@ public class TelegramBot extends TelegramLongPollingBot {
     }
 
     private SendMessage buildResMessage(String chatId, String inputText) {
-        log.info("Building message for approval response");
+        log.info("Building message for approval response to  chatId: {} and the text is: {}", chatId, inputText);
         return SendMessage.builder()
                 .chatId(chatId)
                 .text(inputText)

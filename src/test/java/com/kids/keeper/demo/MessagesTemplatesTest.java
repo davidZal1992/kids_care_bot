@@ -2,7 +2,6 @@ package com.kids.keeper.demo;
 
 import com.kids.keeper.demo.bot.MessageTemplates;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
