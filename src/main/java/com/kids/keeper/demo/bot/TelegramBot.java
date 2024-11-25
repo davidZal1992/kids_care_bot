@@ -16,7 +16,6 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 
-import java.awt.*;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
@@ -106,7 +105,7 @@ public class TelegramBot extends TelegramLongPollingBot {
         this.answerReceived = true;
         String origin = update.getCallbackQuery().getFrom().getFirstName();
 
-        log.info("Origin sender is: {}", origin);
+        log.info("Origin sender is: {} and the label is {}", origin, update.getCallbackQuery().getData());
 
         // Check if the callback data is for pickup
 
@@ -159,7 +158,7 @@ public class TelegramBot extends TelegramLongPollingBot {
 
 
     private SendMessage buildMReqMessage(String chatId, String inputText, InlineKeyboardMarkup keyboardMarkup) {
-        log.info("Building message for approval request");
+        log.info("Building message for approval response to  chatId: {} and the text is: {}", chatId, inputText);
         return SendMessage.builder()
                 .chatId(chatId)
                 .text(inputText)
@@ -168,7 +167,7 @@ public class TelegramBot extends TelegramLongPollingBot {
     }
 
     private SendMessage buildResMessage(String chatId, String inputText) {
-        log.info("Building message for approval response");
+        log.info("Building message for approval response to  chatId: {} and the text is: {}", chatId, inputText);
         return SendMessage.builder()
                 .chatId(chatId)
                 .text(inputText)
@@ -187,7 +186,7 @@ public class TelegramBot extends TelegramLongPollingBot {
     // This will run every Monday, Wednesday and Sunday at 7:35 AM for David's drop the kids
     public void sendDailyQuestionFatherDrop() {
         log.info("Preparing message template for dropping the kids in kinder garden for David.");
-        SendMessage sendMessage = buildMReqMessage(fatherChatId, String.format(MessageTemplates.REMINDER_MESSAGE_INBOUND_MSG, translatedFatherName), pickUpKeyboardMarkup);
+        SendMessage sendMessage = buildMReqMessage(fatherChatId, String.format(MessageTemplates.REMINDER_MESSAGE_INBOUND_MSG, translatedFatherName), dropOffKeyboardMarkup);
         wrapMessageWithRetires(sendMessage, PHONE_FATHER, translatedFatherName, INITIAL_PHONE_CALL_DROP_MSG, PHONE_MOTHER);
     }
 
@@ -195,7 +194,7 @@ public class TelegramBot extends TelegramLongPollingBot {
     // This will run every Tuesday and Thursday at 16:35 AM for David's pickup kids
     public void sendDailyQuestionFatherPick() {
         log.info("Preparing message template for taking the kids from kinder garden for Lior.");
-        SendMessage sendMessage = buildMReqMessage(fatherChatId, String.format(MessageTemplates.REMINDER_MESSAGE_OUTBOUND_MSG, translatedFatherName), dropOffKeyboardMarkup);
+        SendMessage sendMessage = buildMReqMessage(fatherChatId, String.format(MessageTemplates.REMINDER_MESSAGE_OUTBOUND_MSG, translatedFatherName), pickUpKeyboardMarkup);
         wrapMessageWithRetires(sendMessage, PHONE_FATHER, translatedFatherName, INITIAL_PHONE_CALL_PICK_MSG, PHONE_MOTHER);
     }
 
@@ -203,7 +202,7 @@ public class TelegramBot extends TelegramLongPollingBot {
     // This will run every Tuesday and Thursday at 07:35 AM for Lior's drop kids
     public void sendDailyQuestionMomDrop() {
         log.info("Preparing message template for taking the kids from kinder garden for Lior.");
-        SendMessage sendMessage = buildMReqMessage(momChatId, String.format(MessageTemplates.REMINDER_MESSAGE_INBOUND_MSG, translatedMomName), pickUpKeyboardMarkup);
+        SendMessage sendMessage = buildMReqMessage(momChatId, String.format(MessageTemplates.REMINDER_MESSAGE_INBOUND_MSG, translatedMomName), dropOffKeyboardMarkup);
         wrapMessageWithRetires(sendMessage, PHONE_MOTHER, translatedMomName, INITIAL_PHONE_CALL_DROP_MSG, PHONE_FATHER);
     }
 
@@ -211,7 +210,7 @@ public class TelegramBot extends TelegramLongPollingBot {
     // This will run every Monday, Wednesday and Sunday at 16:45 PM for Lior's drop the kids
     public void sendDailyQuestionMomPick() {
         log.info("Preparing message template for taking the kids from kinder garden for Lior.");
-        SendMessage sendMessage = buildMReqMessage(momChatId, String.format(MessageTemplates.REMINDER_MESSAGE_OUTBOUND_MSG, translatedMomName), dropOffKeyboardMarkup);
+        SendMessage sendMessage = buildMReqMessage(momChatId, String.format(MessageTemplates.REMINDER_MESSAGE_OUTBOUND_MSG, translatedMomName), pickUpKeyboardMarkup);
         wrapMessageWithRetires(sendMessage, PHONE_MOTHER, translatedMomName, INITIAL_PHONE_CALL_PICK_MSG, PHONE_FATHER);
     }
 
