@@ -218,6 +218,7 @@ public class TelegramBot extends TelegramLongPollingBot {
         AtomicInteger retries = new AtomicInteger(0);
         taskScheduler.scheduleAtFixedRate(() -> {
             if (answerReceived) {
+                answerReceived = false;
                 log.info("Answer received, stopping retries.");
                 taskScheduler.shutdown();
                 return;
