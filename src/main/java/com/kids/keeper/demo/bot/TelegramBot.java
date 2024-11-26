@@ -17,9 +17,11 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMa
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.kids.keeper.demo.bot.MessageTemplates.INITIAL_PHONE_CALL_DROP_MSG;
@@ -111,7 +113,7 @@ public class TelegramBot extends TelegramLongPollingBot {
 
         if (update.getCallbackQuery().getData().equals(Labels.APPROVE_PICK_UP.name())) {
 
-            if (origin.equals(convertNameToHebrew(MOM_NAME))) {
+            if (origin.equals(MOM_NAME)) {
                 log.info("Message received from father regarding pickup and it's approved");
                 SendMessage sendMessage = buildResMessage(momChatId,
                         MessageTemplates.THANKS_MESSAGE_MSG);
@@ -119,12 +121,11 @@ public class TelegramBot extends TelegramLongPollingBot {
             }
 
 
-            if (origin.equals(convertNameToHebrew(FATHER_NAME))) {
+            if (origin.equals(FATHER_NAME)) {
                 log.info("Message received from father regarding pickup and it's approved");
                 SendMessage sendMessage = buildResMessage(fatherChatId,
                         MessageTemplates.THANKS_MESSAGE_MSG);
                 sendQuestion(sendMessage);
-
             }
 
             SendMessage message = buildResMessage(fatherMomGroupChatId,
@@ -182,7 +183,23 @@ public class TelegramBot extends TelegramLongPollingBot {
     String translatedMomName = convertNameToHebrew(MOM_NAME);
     String translatedFatherName = convertNameToHebrew(FATHER_NAME);
 
-    @Scheduled(cron = "0 45 07 ? * MON,WED,SUN", zone = "Asia/Jerusalem")
+    @Scheduled(cron = "0 35 07 ? * TUE,THU", zone = "Asia/Jerusalem")
+    // This will run every Tuesday and Thursday at 07:35 AM for Lior's drop kids
+    public void sendDailyQuestionMomDrop() {
+        log.info("Preparing message template for taking the kids from kinder garden for Lior.");
+        SendMessage sendMessage = buildMReqMessage(momChatId, String.format(MessageTemplates.REMINDER_MESSAGE_INBOUND_MSG, translatedMomName), dropOffKeyboardMarkup);
+        wrapMessageWithRetires(sendMessage, PHONE_MOTHER, translatedMomName, INITIAL_PHONE_CALL_DROP_MSG, PHONE_FATHER);
+    }
+
+    @Scheduled(cron = "0 56 16 ? * TUE,THU", zone = "Asia/Jerusalem")
+    // This will run every Tuesday and Thursday at 16:35 PM for David's pickup kids
+    public void sendDailyQuestionFatherPick() {
+        log.info("Preparing message template for taking the kids from kinder garden for David.");
+        SendMessage sendMessage = buildMReqMessage(fatherChatId, String.format(MessageTemplates.REMINDER_MESSAGE_OUTBOUND_MSG, translatedFatherName), pickUpKeyboardMarkup);
+        wrapMessageWithRetires(sendMessage, PHONE_FATHER, translatedFatherName, INITIAL_PHONE_CALL_PICK_MSG, PHONE_MOTHER);
+    }
+
+    @Scheduled(cron = "0 35 07 ? * TUE,THU", zone = "Asia/Jerusalem")
     // This will run every Monday, Wednesday and Sunday at 7:35 AM for David's drop the kids
     public void sendDailyQuestionFatherDrop() {
         log.info("Preparing message template for dropping the kids in kinder garden for David.");
@@ -190,21 +207,6 @@ public class TelegramBot extends TelegramLongPollingBot {
         wrapMessageWithRetires(sendMessage, PHONE_FATHER, translatedFatherName, INITIAL_PHONE_CALL_DROP_MSG, PHONE_MOTHER);
     }
 
-    @Scheduled(cron = "0 45 16 ? * TUE,THU", zone = "Asia/Jerusalem")
-    // This will run every Tuesday and Thursday at 16:35 AM for David's pickup kids
-    public void sendDailyQuestionFatherPick() {
-        log.info("Preparing message template for taking the kids from kinder garden for Lior.");
-        SendMessage sendMessage = buildMReqMessage(fatherChatId, String.format(MessageTemplates.REMINDER_MESSAGE_OUTBOUND_MSG, translatedFatherName), pickUpKeyboardMarkup);
-        wrapMessageWithRetires(sendMessage, PHONE_FATHER, translatedFatherName, INITIAL_PHONE_CALL_PICK_MSG, PHONE_MOTHER);
-    }
-
-    @Scheduled(cron = "0 45 07 ? * TUE,THU", zone = "Asia/Jerusalem")
-    // This will run every Tuesday and Thursday at 07:35 AM for Lior's drop kids
-    public void sendDailyQuestionMomDrop() {
-        log.info("Preparing message template for taking the kids from kinder garden for Lior.");
-        SendMessage sendMessage = buildMReqMessage(momChatId, String.format(MessageTemplates.REMINDER_MESSAGE_INBOUND_MSG, translatedMomName), dropOffKeyboardMarkup);
-        wrapMessageWithRetires(sendMessage, PHONE_MOTHER, translatedMomName, INITIAL_PHONE_CALL_DROP_MSG, PHONE_FATHER);
-    }
 
     @Scheduled(cron = "0 45 16 ? * MON,WED,SUN", zone = "Asia/Jerusalem")
     // This will run every Monday, Wednesday and Sunday at 16:45 PM for Lior's drop the kids
@@ -216,18 +218,10 @@ public class TelegramBot extends TelegramLongPollingBot {
 
     private void wrapMessageWithRetires(SendMessage message, String toCall, String name, String phoneInTextSpeech, String escalationNumber) {
         AtomicInteger retries = new AtomicInteger(0);
-        taskScheduler.scheduleAtFixedRate(() -> {
-            if (answerReceived) {
-                answerReceived = false;
-                log.info("Answer received, stopping retries.");
-                taskScheduler.shutdown();
-                return;
-            }
-
+        ScheduledFuture<?> scheduledFuture = taskScheduler.scheduleAtFixedRate(() -> {
             log.info("Retrying sending message attempts number {}", retries.get());
 
-            if (retries.incrementAndGet() > 3) {
-                taskScheduler.shutdown();
+            if (retries.incrementAndGet() > 3 && !answerReceived) {
                 SendMessage callToPhoneNumber = SendMessage.builder()
                         .chatId(fatherMomGroupChatId)
                         .text(String.format(MessageTemplates.NO_RESPONSE_AFTER_RETRIES_MSG, name, name))
@@ -242,6 +236,12 @@ public class TelegramBot extends TelegramLongPollingBot {
                 sendQuestion(message);
             }
         }, Duration.ofSeconds(300));
+
+        taskScheduler.schedule(() -> {
+            log.info("After 30 seconds stopping the retries scheduler. answerReceived: {}", answerReceived);
+            scheduledFuture.cancel(true);
+            answerReceived = false; // Init for the next schedule
+        }, Instant.ofEpochMilli(System.currentTimeMillis() + 1500));
     }
 
     private InlineKeyboardMarkup buildKeyboard(String label) {

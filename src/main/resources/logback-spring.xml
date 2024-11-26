@@ -14,7 +14,7 @@
 
     <!-- More detailed and custom log pattern -->
     <appender name="FILE" class="ch.qos.logback.core.FileAppender">
-        <file>myapp.log</file>
+        <file>${HOME}/myapp.log</file>
         <encoder>
             <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} [%file : %line] - %msg%n</pattern>
         </encoder>
@@ -23,6 +23,7 @@
     <!-- Set logger levels and appender-ref -->
     <root level="INFO">
         <appender-ref ref="STDOUT"/>
+        <appender-ref ref="FILE"/>
     </root>
 
 </configuration>
