@@ -191,7 +191,7 @@ public class TelegramBot extends TelegramLongPollingBot {
         wrapMessageWithRetires(sendMessage, PHONE_MOTHER, translatedMomName, INITIAL_PHONE_CALL_DROP_MSG, PHONE_FATHER);
     }
 
-    @Scheduled(cron = "0 56 16 ? * TUE,THU", zone = "Asia/Jerusalem")
+    @Scheduled(cron = "0 45 16 ? * TUE,THU", zone = "Asia/Jerusalem")
     // This will run every Tuesday and Thursday at 16:35 PM for David's pickup kids
     public void sendDailyQuestionFatherPick() {
         log.info("Preparing message template for taking the kids from kinder garden for David.");
@@ -199,7 +199,7 @@ public class TelegramBot extends TelegramLongPollingBot {
         wrapMessageWithRetires(sendMessage, PHONE_FATHER, translatedFatherName, INITIAL_PHONE_CALL_PICK_MSG, PHONE_MOTHER);
     }
 
-    @Scheduled(cron = "0 35 07 ? * TUE,THU", zone = "Asia/Jerusalem")
+    @Scheduled(cron = "0 35 07 ? * MON,WED,SUN", zone = "Asia/Jerusalem")
     // This will run every Monday, Wednesday and Sunday at 7:35 AM for David's drop the kids
     public void sendDailyQuestionFatherDrop() {
         log.info("Preparing message template for dropping the kids in kinder garden for David.");
@@ -241,7 +241,7 @@ public class TelegramBot extends TelegramLongPollingBot {
             log.info("After 30 seconds stopping the retries scheduler. answerReceived: {}", answerReceived);
             scheduledFuture.cancel(true);
             answerReceived = false; // Init for the next schedule
-        }, Instant.ofEpochMilli(System.currentTimeMillis() + 1500));
+        }, Instant.ofEpochMilli(System.currentTimeMillis() + 1500000));
     }
 
     private InlineKeyboardMarkup buildKeyboard(String label) {
