@@ -241,7 +241,7 @@ public class TelegramBot extends TelegramLongPollingBot {
             log.info("After 30 seconds stopping the retries scheduler. answerReceived: {}", answerReceived);
             scheduledFuture.cancel(true);
             answerReceived = false; // Init for the next schedule
-        }, Instant.ofEpochMilli(System.currentTimeMillis() + 1500000));
+        }, Instant.ofEpochMilli(System.currentTimeMillis() + 1200000));
     }
 
     private InlineKeyboardMarkup buildKeyboard(String label) {
