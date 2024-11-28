@@ -183,7 +183,7 @@ public class TelegramBot extends TelegramLongPollingBot {
     String translatedMomName = convertNameToHebrew(MOM_NAME);
     String translatedFatherName = convertNameToHebrew(FATHER_NAME);
 
-    @Scheduled(cron = "0 35 07 ? * TUE,THU", zone = "Asia/Jerusalem")
+    @Scheduled(cron = "0 45 07 ? * TUE,THU", zone = "Asia/Jerusalem")
     // This will run every Tuesday and Thursday at 07:35 AM for Lior's drop kids
     public void sendDailyQuestionMomDrop() {
         log.info("Preparing message template for taking the kids from kinder garden for Lior.");
@@ -199,7 +199,7 @@ public class TelegramBot extends TelegramLongPollingBot {
         wrapMessageWithRetires(sendMessage, PHONE_FATHER, translatedFatherName, INITIAL_PHONE_CALL_PICK_MSG, PHONE_MOTHER);
     }
 
-    @Scheduled(cron = "0 35 07 ? * MON,WED,SUN", zone = "Asia/Jerusalem")
+    @Scheduled(cron = "0 45 07 ? * MON,WED,SUN", zone = "Asia/Jerusalem")
     // This will run every Monday, Wednesday and Sunday at 7:35 AM for David's drop the kids
     public void sendDailyQuestionFatherDrop() {
         log.info("Preparing message template for dropping the kids in kinder garden for David.");
@@ -219,9 +219,14 @@ public class TelegramBot extends TelegramLongPollingBot {
     private void wrapMessageWithRetires(SendMessage message, String toCall, String name, String phoneInTextSpeech, String escalationNumber) {
         AtomicInteger retries = new AtomicInteger(0);
         ScheduledFuture<?> scheduledFuture = taskScheduler.scheduleAtFixedRate(() -> {
-            log.info("Retrying sending message attempts number {}", retries.get());
+            log.info("Retrying sending message attempts number {}. If message already answered will skip: {}", retries.get(), answerReceived);
 
-            if (retries.incrementAndGet() > 3 && !answerReceived) {
+            if (answerReceived) {
+                log.info("Answer received, stopping the retries scheduler");
+                return;
+            }
+
+            if (retries.incrementAndGet() == 4) {
                 SendMessage callToPhoneNumber = SendMessage.builder()
                         .chatId(fatherMomGroupChatId)
                         .text(String.format(MessageTemplates.NO_RESPONSE_AFTER_RETRIES_MSG, name, name))
@@ -235,10 +240,10 @@ public class TelegramBot extends TelegramLongPollingBot {
             } else {
                 sendQuestion(message);
             }
-        }, Duration.ofSeconds(300));
+        }, Duration.ofSeconds(400));
 
         taskScheduler.schedule(() -> {
-            log.info("After 30 seconds stopping the retries scheduler. answerReceived: {}", answerReceived);
+            log.info("After 20 minutes stopping the retries scheduler. answerReceived: {}", answerReceived);
             scheduledFuture.cancel(true);
             answerReceived = false; // Init for the next schedule
         }, Instant.ofEpochMilli(System.currentTimeMillis() + 1200000));

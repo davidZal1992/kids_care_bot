@@ -16,9 +16,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.net.URI;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 @Slf4j
 @Service
@@ -39,7 +37,6 @@ public class TwilioServiceImpl implements TwilioService {
     @PostConstruct
     public void init() {
         Twilio.init(ACCOUNT_SID, AUTH_TOKEN);
-//        initialCall("+972542020184", "שלום זוהי בדיקה של המערכת", "972542020184");
     }
 
     /**
