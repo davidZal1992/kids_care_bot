@@ -16,11 +16,12 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 
-import java.awt.*;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.kids.keeper.demo.bot.MessageTemplates.INITIAL_PHONE_CALL_DROP_MSG;
@@ -106,13 +107,13 @@ public class TelegramBot extends TelegramLongPollingBot {
         this.answerReceived = true;
         String origin = update.getCallbackQuery().getFrom().getFirstName();
 
-        log.info("Origin sender is: {}", origin);
+        log.info("Origin sender is: {} and the label is {}", origin, update.getCallbackQuery().getData());
 
         // Check if the callback data is for pickup
 
         if (update.getCallbackQuery().getData().equals(Labels.APPROVE_PICK_UP.name())) {
 
-            if (origin.equals(convertNameToHebrew(MOM_NAME))) {
+            if (origin.equals(MOM_NAME)) {
                 log.info("Message received from father regarding pickup and it's approved");
                 SendMessage sendMessage = buildResMessage(momChatId,
                         MessageTemplates.THANKS_MESSAGE_MSG);
@@ -120,12 +121,11 @@ public class TelegramBot extends TelegramLongPollingBot {
             }
 
 
-            if (origin.equals(convertNameToHebrew(FATHER_NAME))) {
+            if (origin.equals(FATHER_NAME)) {
                 log.info("Message received from father regarding pickup and it's approved");
                 SendMessage sendMessage = buildResMessage(fatherChatId,
                         MessageTemplates.THANKS_MESSAGE_MSG);
                 sendQuestion(sendMessage);
-
             }
 
             SendMessage message = buildResMessage(fatherMomGroupChatId,
@@ -159,7 +159,7 @@ public class TelegramBot extends TelegramLongPollingBot {
 
 
     private SendMessage buildMReqMessage(String chatId, String inputText, InlineKeyboardMarkup keyboardMarkup) {
-        log.info("Building message for approval request");
+        log.info("Building message for approval response to  chatId: {} and the text is: {}", chatId, inputText);
         return SendMessage.builder()
                 .chatId(chatId)
                 .text(inputText)
@@ -168,7 +168,7 @@ public class TelegramBot extends TelegramLongPollingBot {
     }
 
     private SendMessage buildResMessage(String chatId, String inputText) {
-        log.info("Building message for approval response");
+        log.info("Building message for approval response to  chatId: {} and the text is: {}", chatId, inputText);
         return SendMessage.builder()
                 .chatId(chatId)
                 .text(inputText)
@@ -183,51 +183,50 @@ public class TelegramBot extends TelegramLongPollingBot {
     String translatedMomName = convertNameToHebrew(MOM_NAME);
     String translatedFatherName = convertNameToHebrew(FATHER_NAME);
 
-    @Scheduled(cron = "0 45 07 ? * MON,WED,SUN", zone = "Asia/Jerusalem")
-    // This will run every Monday, Wednesday and Sunday at 7:35 AM for David's drop the kids
-    public void sendDailyQuestionFatherDrop() {
-        log.info("Preparing message template for dropping the kids in kinder garden for David.");
-        SendMessage sendMessage = buildMReqMessage(fatherChatId, String.format(MessageTemplates.REMINDER_MESSAGE_INBOUND_MSG, translatedFatherName), pickUpKeyboardMarkup);
-        wrapMessageWithRetires(sendMessage, PHONE_FATHER, translatedFatherName, INITIAL_PHONE_CALL_DROP_MSG, PHONE_MOTHER);
-    }
-
-    @Scheduled(cron = "0 45 16 ? * TUE,THU", zone = "Asia/Jerusalem")
-    // This will run every Tuesday and Thursday at 16:35 AM for David's pickup kids
-    public void sendDailyQuestionFatherPick() {
-        log.info("Preparing message template for taking the kids from kinder garden for Lior.");
-        SendMessage sendMessage = buildMReqMessage(fatherChatId, String.format(MessageTemplates.REMINDER_MESSAGE_OUTBOUND_MSG, translatedFatherName), dropOffKeyboardMarkup);
-        wrapMessageWithRetires(sendMessage, PHONE_FATHER, translatedFatherName, INITIAL_PHONE_CALL_PICK_MSG, PHONE_MOTHER);
-    }
-
     @Scheduled(cron = "0 45 07 ? * TUE,THU", zone = "Asia/Jerusalem")
     // This will run every Tuesday and Thursday at 07:35 AM for Lior's drop kids
     public void sendDailyQuestionMomDrop() {
         log.info("Preparing message template for taking the kids from kinder garden for Lior.");
-        SendMessage sendMessage = buildMReqMessage(momChatId, String.format(MessageTemplates.REMINDER_MESSAGE_INBOUND_MSG, translatedMomName), pickUpKeyboardMarkup);
+        SendMessage sendMessage = buildMReqMessage(momChatId, String.format(MessageTemplates.REMINDER_MESSAGE_INBOUND_MSG, translatedMomName), dropOffKeyboardMarkup);
         wrapMessageWithRetires(sendMessage, PHONE_MOTHER, translatedMomName, INITIAL_PHONE_CALL_DROP_MSG, PHONE_FATHER);
     }
+
+    @Scheduled(cron = "0 45 16 ? * TUE,THU", zone = "Asia/Jerusalem")
+    // This will run every Tuesday and Thursday at 16:35 PM for David's pickup kids
+    public void sendDailyQuestionFatherPick() {
+        log.info("Preparing message template for taking the kids from kinder garden for David.");
+        SendMessage sendMessage = buildMReqMessage(fatherChatId, String.format(MessageTemplates.REMINDER_MESSAGE_OUTBOUND_MSG, translatedFatherName), pickUpKeyboardMarkup);
+        wrapMessageWithRetires(sendMessage, PHONE_FATHER, translatedFatherName, INITIAL_PHONE_CALL_PICK_MSG, PHONE_MOTHER);
+    }
+
+    @Scheduled(cron = "0 45 07 ? * MON,WED,SUN", zone = "Asia/Jerusalem")
+    // This will run every Monday, Wednesday and Sunday at 7:35 AM for David's drop the kids
+    public void sendDailyQuestionFatherDrop() {
+        log.info("Preparing message template for dropping the kids in kinder garden for David.");
+        SendMessage sendMessage = buildMReqMessage(fatherChatId, String.format(MessageTemplates.REMINDER_MESSAGE_INBOUND_MSG, translatedFatherName), dropOffKeyboardMarkup);
+        wrapMessageWithRetires(sendMessage, PHONE_FATHER, translatedFatherName, INITIAL_PHONE_CALL_DROP_MSG, PHONE_MOTHER);
+    }
+
 
     @Scheduled(cron = "0 45 16 ? * MON,WED,SUN", zone = "Asia/Jerusalem")
     // This will run every Monday, Wednesday and Sunday at 16:45 PM for Lior's drop the kids
     public void sendDailyQuestionMomPick() {
         log.info("Preparing message template for taking the kids from kinder garden for Lior.");
-        SendMessage sendMessage = buildMReqMessage(momChatId, String.format(MessageTemplates.REMINDER_MESSAGE_OUTBOUND_MSG, translatedMomName), dropOffKeyboardMarkup);
+        SendMessage sendMessage = buildMReqMessage(momChatId, String.format(MessageTemplates.REMINDER_MESSAGE_OUTBOUND_MSG, translatedMomName), pickUpKeyboardMarkup);
         wrapMessageWithRetires(sendMessage, PHONE_MOTHER, translatedMomName, INITIAL_PHONE_CALL_PICK_MSG, PHONE_FATHER);
     }
 
     private void wrapMessageWithRetires(SendMessage message, String toCall, String name, String phoneInTextSpeech, String escalationNumber) {
         AtomicInteger retries = new AtomicInteger(0);
-        taskScheduler.scheduleAtFixedRate(() -> {
+        ScheduledFuture<?> scheduledFuture = taskScheduler.scheduleAtFixedRate(() -> {
+            log.info("Retrying sending message attempts number {}. If message already answered will skip: {}", retries.get(), answerReceived);
+
             if (answerReceived) {
-                log.info("Answer received, stopping retries.");
-                taskScheduler.shutdown();
+                log.info("Answer received, stopping the retries scheduler");
                 return;
             }
 
-            log.info("Retrying sending message attempts number {}", retries.get());
-
-            if (retries.incrementAndGet() > 3) {
-                taskScheduler.shutdown();
+            if (retries.incrementAndGet() == 4) {
                 SendMessage callToPhoneNumber = SendMessage.builder()
                         .chatId(fatherMomGroupChatId)
                         .text(String.format(MessageTemplates.NO_RESPONSE_AFTER_RETRIES_MSG, name, name))
@@ -241,7 +240,13 @@ public class TelegramBot extends TelegramLongPollingBot {
             } else {
                 sendQuestion(message);
             }
-        }, Duration.ofSeconds(300));
+        }, Duration.ofSeconds(400));
+
+        taskScheduler.schedule(() -> {
+            log.info("After 20 minutes stopping the retries scheduler. answerReceived: {}", answerReceived);
+            scheduledFuture.cancel(true);
+            answerReceived = false; // Init for the next schedule
+        }, Instant.ofEpochMilli(System.currentTimeMillis() + 1200000));
     }
 
     private InlineKeyboardMarkup buildKeyboard(String label) {

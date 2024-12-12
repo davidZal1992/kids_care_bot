@@ -15,6 +15,7 @@ public class TaskSchedulerConfig {
         taskScheduler.setPoolSize(5);
         taskScheduler.setThreadNamePrefix("TaskScheduler-");
         taskScheduler.initialize();
+        taskScheduler.setContinueExistingPeriodicTasksAfterShutdownPolicy(true);
         return taskScheduler;
     }
 }
